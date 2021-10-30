@@ -12,6 +12,7 @@ import json
 import urllib.request, urllib.parse, urllib.error
 import urllib.request, urllib.error, urllib.parse
 import urllib.parse
+import base64
 
 PUSHSAFER_API = "https://www.pushsafer.com/"
 
@@ -59,6 +60,8 @@ def plugin(srv, item):
     # 9 (if present) is the Pushsafer retry after which time (in secomds 60-10800) a message should resend
     # 10 (if present) is the Pushsafer expire after which time (in secomds 60-10800) the retry should stopped
     # 11 (if present) is the Pushsafer answer, 1 = Answer, 0 = no possibilty to answer
+    # 12 (if present) is the Pushsafer image, Data URL with Base64-encoded string, data:image/gif;base64,R0l...BOw==
+    # 13 (if present) is the Pushsafer Image Size. Smaller image = faster loading time, 0 = 1024px, 1 = 768px, 2 = 512px, 3 = 256px
 
     try:
         appkey  = addrs[0]
@@ -102,6 +105,34 @@ def plugin(srv, item):
 
     if len(addrs) > 11:
         params['a'] = addrs[11]
+
+    if len(addrs) > 12:
+        img_data = addrs[12]
+        url = urllib.parse.urlparse(img_data)
+        if url.scheme == 'data' \
+            and any(
+                filter(
+                    lambda x: url.path.startswith('image/%s;base64' % x),
+                        [ 'gif', 'jpeg', 'png'])):
+            params['p'] = img_data
+        elif all([url.scheme, url.netloc, url.path]):
+            url = img_data
+            try:
+                req = urllib.request.Request(url)
+                response = urllib.request.urlopen(req, timeout=5)
+                if response.getheader('Content-disposition').startswith('inline;'):
+                    output = 'data:%s;base64,' % response.getheader('Content-type')
+                    output += base64.b64encode(response.read()).decode()
+                    params['p'] = output
+                else:
+                    srv.logging.warn("Error attaching pushsafer image to %s [%s]: %s" % (item.target, params, 'Content-disposition must be "inline"'))
+            except urllib.error.HTTPError as e:
+                srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
+            except urllib.error.URLError as e:
+                srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
+
+    if len(addrs) > 13:
+        params['is'] = addrs[13]
 
     if title is not None:
         params['t'] = title
