@@ -97,7 +97,7 @@ def plugin(srv, item):
     if len(addrs) > 8:
         params['pr'] = addrs[8]
 
-    if len(addrs) > 9:
+    if len(addrs) > 8:
         params['re'] = addrs[9]
 
     if len(addrs) > 10:
@@ -126,10 +126,12 @@ def plugin(srv, item):
                     params['p'] = output
                 else:
                     srv.logging.warn("Error attaching pushsafer image to %s [%s]: %s" % (item.target, params, 'Content-disposition must be "inline"'))
-            except urllib.error.HTTPError as e:
-                srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
-            except urllib.error.URLError as e:
-                srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
+            # except urllib.error.HTTPError as e:
+            #     srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
+            # except urllib.error.URLError as e:
+            #     srv.logging.warn("Error attaching pushsafer image %s [%s]: %s" % (item.target, params, e))
+            except Exception as e:
+                srv.logging.warn("Error attaching pushsafer image  %s [%s]: %s" % (item.target, params, e))
 
     if len(addrs) > 13:
         params['is'] = addrs[13]
